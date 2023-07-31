@@ -1,16 +1,13 @@
-import 'dart:html';
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:materiapp/OBJETOS/Materias.dart';
+import 'package:materiapp/Pages/AgegarParciales.dart';
 import 'package:materiapp/Pages/AgregarTemas.dart';
-import 'package:materiapp/Pages/home_page.dart';
-
-import '../Pages/AgregarContenido.dart';
-import '../Pages/contentpage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'AgregarContenido.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +22,6 @@ void main() async {
 class adminDash extends StatelessWidget{
   const adminDash({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return FluentApp(
@@ -49,6 +45,8 @@ class _adminDashhomeState extends State<adminDashhome> {
   String _registromateria = "";
   final db = FirebaseFirestore.instance;
   int _currentPage = 0;
+
+
   @override
   Widget build(BuildContext context) {
     final currentwidth = MediaQuery.of(context).size.width;
@@ -71,13 +69,9 @@ class _adminDashhomeState extends State<adminDashhome> {
         ),
         items: <NavigationPaneItem>[
           PaneItem(icon: const Icon(FluentIcons.home),
-              title: const Text('Inicio'), body: AgregarTemas()),
+              title: const Text('Agregar temasxx  '), body: AgregarTemas()),
           PaneItem(icon: const Icon(FluentIcons.home),
-              title: const Text('Archivos'), body: HomePage(texto: '', idcotizacion: '', materia: '', estado: '',)),
-          PaneItem(icon: const Icon(FluentIcons.home),
-              title: const Text('Contenido'), body: ContentPage(texto: '', idcotizacion: '', materia: '', estado: '',)),
-          PaneItem(icon: const Icon(FluentIcons.home),
-              title: const Text('Agregar contenido'), body: AgregarContenido()),
+              title: const Text('Agegar parciales'), body: AgregarParciales()),
         ],
         selected: _currentPage,
         onChanged: (index) => setState(() {

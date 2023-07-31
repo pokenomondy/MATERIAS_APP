@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:materiapp/Config%20Global/Config%20Global.dart';
 import 'package:materiapp/OBJETOS/Subtemas.dart';
 import 'package:materiapp/OBJETOS/Temas.dart';
+import '../OBJETOS/ObjetosRegistro/SubtemasRegistro.dart';
+import '../OBJETOS/ObjetosRegistro/TemasRegistro.dart';
 import '../subPages/PruebaNavegacion.dart';
 import '../utils/app_navigator.dart';
-import '../OBJETOS/Materias.dart';
 import 'AgregarContenido.dart';
 
 
@@ -31,8 +33,6 @@ class AgregarTemas extends StatefulWidget {
 
     );
   }
-
-
 }
 
 class _AgregarTemasState extends State<AgregarTemas> {
@@ -47,6 +47,7 @@ class _AgregarTemasState extends State<AgregarTemas> {
   bool _cargarnombrematerias = false;
   String _addsubtema = "";
   int _numdeSubtemas = 1;
+  Config config = Config();
 
   @override
   void initState() {
@@ -108,7 +109,9 @@ class _AgregarTemasState extends State<AgregarTemas> {
                       );
                     }).toList(),
                     onChanged: (text) {
-                      setState(() => selectedMateria = text);
+                      setState(() =>
+                      selectedMateria = text
+                      );
                       print("materia seleccionado $selectedMateria");
                     },
                     placeholder: const Text('Select a cat breed'),
@@ -122,12 +125,10 @@ class _AgregarTemasState extends State<AgregarTemas> {
             width: 300,
             color: Colors.blue,
             child: Column(children: [
-              Text("2 column"),
               Container(
                 width: 350,
                 child: Column(children: [
-                  Text('2 columna'),
-                  Text('Agregar temas , aqui viene'),
+                  Text('Agregar temas'),
                   TextBox(
                     placeholder: "Nombre",
                     onChanged: (value){
@@ -140,17 +141,12 @@ class _AgregarTemasState extends State<AgregarTemas> {
                   FilledButton(
                     child: const Text('Agregar Tema'),
                     onPressed: (){
+                      config.eliminarSharedPreferences(selectedMateria!);
                       cargarnumerodeTemasMaterias();
                       print('oprimido boton');
                     },
                   ),
-                  FilledButton(
-                    child: const Text('A otra actividad prueba'),
-                    onPressed: (){
-                      aotraactividad();
-                      print('oprimido boton');
-                    },
-                  ),
+
 
 
 
@@ -165,112 +161,27 @@ class _AgregarTemasState extends State<AgregarTemas> {
             width: 300,
             child: Column(
               children: [
-                Text("3 column"),
-                Text('segundo texto si si rve'),
 
-                StreamBuilder(
-                    stream: db.collection("MATERIAS").doc(selectedMateria).collection("TEMAS").snapshots(),
-                    builder: (context, snapshot){
-                      if(!snapshot.hasData) return Text('Cargando');
-                      temas.clear();
-                      for(var doc in snapshot.data!.docs){
-                        final data = doc.data() as Map<String,dynamic>;
-                        Temas tema = Temas(
-                            data['nombre Tema'],
-                            data['Orden tema']
+                if(selectedMateria!=null)
+                FutureBuilder(
+                    future: config.obtenerTemasDesdeFirebase(selectedMateria!),
+                    builder: (context,snapshot){
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        // Mientras se espera, mostrar un mensaje de carga
+                        return Center(
+                          child: Text("cargando"), // O cualquier otro widget de carga
                         );
-                        temas.add(tema);
-                        print(tema);
+                      } else if (snapshot.hasError) {
+                        // Si ocurre un error en el Future, mostrar un mensaje de error
+                        return Center(
+                          child: Text("Error al cargar los datos"),
+                        );
+                      } else {
+                        List<Temas> temaslist = snapshot.data;
+                        return CuadroTema(temaslist);
                       }
-                      return Center(
-                        child: Container(
-                          height: 450,
-                          color: Colors.red,
-                          width: 450,
-                          child: ListView.builder(
-                              itemCount: snapshot.data?.size,
-                              itemBuilder: (context,index){
-                                Temas tema = temas[index];
-
-                                return  Column(
-                                  children: [
-                                    ListTile.selectable(
-                                      title: Text("${tema.ordentema}. ${tema.nombreTema}"),
-                                      onPressed: (){
-                                        print("oprimito ${tema.nombreTema}");
-                                      },
-                                      trailing: Column(
-                                        children: [
-                                          Text(_numdeSubtemas.toString()),
-                                        ],
-                                      ),
-
-
-                                    ),
-                                    TextBox(
-                                      placeholder: "Nombre",
-                                      onChanged: (value){
-                                        setState(() {
-                                          _addsubtema = value;
-                                          print(_addsubtema);
-                                        });
-                                      },
-                                    ),
-                                    FilledButton(
-                                      child: const Text('Agregar SubTema'),
-                                      onPressed: () async {
-                                        cargarnumerodeSubtemasMaterias(tema.nombreTema,tema.ordentema);
-                                        print('oprimido boton');
-                                      },
-                                    ),
-                                    StreamBuilder(
-                                        stream: db.collection("MATERIAS").doc(selectedMateria).collection("TEMAS").doc("${tema.ordentema}. ${tema.nombreTema}").collection("SUBTEMAS").snapshots(),
-                                        builder: (context,snapshot){
-                                          if(!snapshot.hasData) return Text('Cargando');
-                                          List<SubTemas> subtemas = [];
-                                          subtemas.clear();
-                                          for(var doc in snapshot.data!.docs){
-                                            final data = doc.data() as Map<String,dynamic>;
-                                            SubTemas subtema = SubTemas(
-                                              data['nombreSubTema'],
-                                              data['ordenSubtema'],
-                                            );
-                                            subtemas.add(subtema);
-                                          }
-                                          int? numsubtemas = snapshot.data?.size;
-                                          print(numsubtemas);
-
-                                          if(numsubtemas == 0){
-                                            return Text('No hay subtemas');
-                                          }else{
-                                            return Container(
-                                              height: 150,
-                                              child: ListView.builder(
-                                                  itemCount: snapshot.data?.size,
-                                                  itemBuilder: (context,index){
-                                                    SubTemas subtema = subtemas[index];
-
-                                                    return ListTile(
-                                                      title: Text("${tema.ordentema}.${subtema.ordenSubtema}. ${subtema.nombreSubTema}"),
-                                                      trailing:PruebaNavegacion(ordentema: tema.ordentema, nombretema: tema.nombreTema, ordensubtema: subtema.ordenSubtema, nombresubtema: subtema.nombreSubTema),
-
-                                                    );
-                                                  }),
-                                            );
-                                          }
-                                        }
-                                        ),
-                                  ],
-                                );
-
-
-                              }),
-
-
-                        ),
-                      );
                     }
-                ),
+                    ),
 
               ],
             ),
@@ -284,7 +195,7 @@ class _AgregarTemasState extends State<AgregarTemas> {
   void addtemamateria() async{
     print("a subir la materia");
     CollectionReference reference = db.collection("MATERIAS").doc(selectedMateria).collection("TEMAS");
-    Temas newtema = Temas(_addtema, _numordentema);
+    TemasRegistro newtema = TemasRegistro(_addtema, _numordentema);
     String anidado = "$_numordentema. $_addtema";
     await reference.doc(anidado).set(newtema.toMap());
   }
@@ -292,7 +203,7 @@ class _AgregarTemasState extends State<AgregarTemas> {
   void addsubtemamateria(String nombreTema, int ordentema) async{
     print("a subir la submateroa");
     CollectionReference reference = db.collection("MATERIAS").doc(selectedMateria).collection("TEMAS").doc("$ordentema. $nombreTema").collection("SUBTEMAS");
-    SubTemas newsubtema = SubTemas(_addsubtema, _numdeSubtemas);
+    SubTemasRegistro newsubtema = SubTemasRegistro(_addsubtema, _numdeSubtemas);
     String anidado = "1.$_numdeSubtemas. $_addsubtema";
     await reference.doc(anidado).set(newsubtema.toMap());
   }
@@ -303,6 +214,77 @@ class _AgregarTemasState extends State<AgregarTemas> {
   }
 }
 
+class CuadroTema extends StatefulWidget {
+  final List<Temas> temaslist;
+
+
+  CuadroTema(this.temaslist);
+
+  @override
+  _CuadroTemaState createState() => _CuadroTemaState();
+}
+
+class _CuadroTemaState extends State<CuadroTema> {
+  int? _expandedIndex; // Rastrea el índice del tema expandido
+
+
+  @override
+  Widget build(BuildContext context) {
+    final double currentwidth = MediaQuery.of(context).size.width;
+    final double currentheight = MediaQuery.of(context).size.height;
+
+    return Container(
+      height: currentheight-100,
+      child: ListView.builder(
+          itemCount: widget.temaslist.length,
+          itemBuilder: (context,index){
+            Temas tema = widget.temaslist[index];
+
+              return Column(
+                children: [
+                  ListTile(
+                    title: Text("${tema.ordentema}. ${tema.nombreTema}"),),
+                  TextBox(
+                    placeholder: "Nombre",
+                    onChanged: (value){
+                      setState(() {
+                      });
+                    },
+                  ),
+                  FilledButton(
+                    child: const Text('Agregar SubTema'),
+                    onPressed: () async {
+                    },
+                  ),
+                  Container(
+                    height: 100,
+                    child: ListView.builder(
+                        itemCount: tema.subtemas.length,
+                        itemBuilder: (context,subindex){
+                          SubTemas subtema = tema.subtemas[subindex];
+
+                          return Container(
+                            height: 70,
+                            child: ListTile(
+                              title: Text("${tema.ordentema}.${subtema.ordenSubtema}. ${subtema.nombreSubTema}"),
+                              trailing:PruebaNavegacion(ordentema: tema.ordentema, nombretema: tema.nombreTema, ordensubtema: subtema.ordenSubtema, nombresubtema: subtema.nombreSubTema),
+                            ),
+                          );
+                        }
+                        ),
+                  ),
+                ],
+              );
+
+          }
+          ),
+    );
+
+  }
+
+
+
+}
 
 
 

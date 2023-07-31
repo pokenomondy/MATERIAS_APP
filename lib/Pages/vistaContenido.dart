@@ -12,10 +12,10 @@ import 'package:materiapp/OBJETOS/Contenido.dart';
 import 'package:flutter_math_fork/ast.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:materiapp/Pages/AgregarContenido.dart';
-import 'OBJETOS/ArchivosSolicitud.dart';
-import 'package:flutter_quill_extensions/flutter_quill_extensions.dart' as quill;
-
-import 'Widgets/TimeStampEmbedBuilderWidget.dart';
+import 'package:materiapp/Widgets/FirebaseImageWidget.dart';
+import '../OBJETOS/ArchivosSolicitud.dart';
+import '../Widgets/ImageEmbed.dart';
+import '../Widgets/LatexEmbedBuilder.dart';
 
 
 
@@ -50,10 +50,43 @@ class _vistaContenidoState extends State<vistaContenido> {
   String _archivoExtension = "";
   UploadTask? uploadTask;
   String _imgurl = "";
-
+  List<String> imageUrls = [];
+  List<Map<String, dynamic>> contenidoData = [];
 
 
   @override
+  void initState() {
+    super.initState();
+    cargardatoscontenido();
+  }
+
+  Future<void> cargardatoscontenido() async {
+    print("se cargaron los contenidos");
+    CollectionReference rerencecontenido = db.collection("MATERIAS").doc("CALCULO 1")
+        .collection("TEMAS").doc(
+        "${widget.ordentema}. ${widget.nombretema}").collection(
+        "SUBTEMAS").doc(
+        "${widget.ordentema}.${widget.ordensubtema}. ${widget
+            .nombresubtema}").collection("CONTENIDO");
+    QuerySnapshot querycontenido = await rerencecontenido.get();
+    for (var doc in querycontenido.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      contenidoData = (data['contenido'] as List).cast<Map<String, dynamic>>();
+      Contenido contenido = Contenido(
+        contenidoData,
+      );
+      contenidos.add(contenido);
+      print(contenidos);
+    }
+
+    final delta = quill.Delta.fromJson(contenidoData as List);
+    _controller.compose(delta,TextSelection.collapsed(offset: 0 ),quill.ChangeSource.LOCAL);
+
+  }
+
+
+
+    @override
   Widget build(BuildContext context) {
     return Row(
       children: [
@@ -77,10 +110,6 @@ class _vistaContenidoState extends State<vistaContenido> {
                           selectFile();
                           String imageUrl = await uploadfile();
                           print(imageUrl);
-                          if (imageUrl != null) {
-                            // Inserta la imagen en el editor Quill
-                            _insertarImagenEnQuill(imageUrl);
-                          }
                         }
                   )
                 ],
@@ -90,7 +119,12 @@ class _vistaContenidoState extends State<vistaContenido> {
                 child: Container(
                   child: quill.QuillEditor.basic(
                     controller: _controller,
-                    readOnly: false, // true for view only mode
+                    readOnly: false,
+                    embedBuilders: [
+                      FirebaseImageEmbedBuilder(),
+                      VideoEmbedBuilder(),
+                      LatexEmbedBuilder(),
+                    ],
                   ),
                 ),
               ),
@@ -108,9 +142,8 @@ class _vistaContenidoState extends State<vistaContenido> {
             width: 350,
             child: Column(
               children: [
-                Math.tex(r'x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}',
-                    mathStyle: MathStyle.display),
-                Text("asdas"),
+                //Toca programar un future
+                /*
                 StreamBuilder(
                     stream: db.collection("MATERIAS").doc("CALCULO 1")
                         .collection("TEMAS").doc(
@@ -134,66 +167,52 @@ class _vistaContenidoState extends State<vistaContenido> {
                       }
 
 
-                      return Container(
-                        height: 500,
-                        child: ListView.builder(
-                          itemCount: contenidos.length,
-                          itemBuilder: (context, index) {
-                            final contenido = contenidos[index];
-                            final List<Widget> contentWidgets = [];
+                      return Expanded(child: ListView.builder(
+                        itemCount: contenidos.length,
+                        itemBuilder: (context, index) {
+                          final contenido = contenidos[index];
+                          final List<Widget> contentWidgets = [];
 
-                            final quillController = quill.QuillController(
-                              document: quill.Document.fromDelta(quill.Delta
-                                  .fromJson(contenido.contenido as List)),
-                              selection: TextSelection.collapsed(offset: 0),
-                            );
+                          _controller = quill.QuillController(
+                            document: quill.Document.fromDelta(quill.Delta
+                                .fromJson(contenido.contenido as List)),
+                            selection: TextSelection.collapsed(offset: 0),
+                          );
 
-                            for (final op in contenido.contenido) {
-                              final attributes = op["attributes"];
-                              final insert = op["insert"];
-                              print(insert);
-                              print("block: $op");
-
-                              if (attributes != null && attributes.containsKey("link")) {
-                                contentWidgets.add(Text("Aqui vendria una imagen: $insert"));
-                                print("entro algo aca");
-                              } else {
-                                //Toca insertar una nueva lista de contenido, y ahí se meten las cosas
-                                contentWidgets.add(Text(insert));
-
-                              }
-
-
-                            }
-
-
-
+                          if(kIsWeb){
                             return Container(
-                                height: 500,
-                                child:quill.QuillEditor(
-                                  expands: true,
-                                  scrollController: _scrollController,
-                                  focusNode: _focusNode,
-                                  scrollable: true,
-                                  padding: EdgeInsets.all(30),
-                                  controller: quillController,
-                                  autoFocus: true,
-                                  readOnly: true, // Para que el contenido sea solo de lectura
-                                  embedBuilders: [
-                                    ...FlutterQuillEmbeds.builders(),
-                                    TimeStampEmbedBuilderWidget()
-                                  ],
+                              height: 500,
+                              child:
+                              quill.QuillEditor(
+                                expands: true,
+                                scrollController: _scrollController,
+                                focusNode: _focusNode,
+                                scrollable: true,
+                                padding: EdgeInsets.all(30),
+                                controller: _controller,
+                                autoFocus: true,
+                                readOnly: false, // Para que el contenido sea solo de lectura
+                                embedBuilders: [
+                                  //ImageEmbedBuilderWeb(),
+                                  VideoEmbedBuilder(),
+                                  //ResponsiveImageEmbedBuilder(),
+                                  LatexEmbedBuilder(),
+                                  FirebaseImageEmbedBuilder(),
 
-                                )
+                                ],
+
+                              )
                             );
+                          }
 
-                            print("listsa de widgets $contentWidgets");
-    },
-                        ),
+                          print("listsa de widgets $contentWidgets");
+                        },
 
-                      );
+                      ));
                     }
                 ),
+
+                 */
               ],
             )
         )
@@ -201,12 +220,6 @@ class _vistaContenidoState extends State<vistaContenido> {
     );
   }
 
-  Widget renderLatex(String latexCode) {
-    return TeXView(
-      renderingEngine: TeXViewRenderingEngine.katex(),
-      child: TeXViewDocument(latexCode),
-    );
-  }
 
   void addcontenido() async {
     CollectionReference referencecontenido = db.collection("MATERIAS").doc(
@@ -215,26 +228,18 @@ class _vistaContenidoState extends State<vistaContenido> {
         .doc(
         "${widget.ordentema}.${widget.ordensubtema}. ${widget.nombresubtema}")
         .collection("CONTENIDO");
-    //Contenido newcontenido = Contenido(_controller as String, 1, "escrito");
-    // Obtener el contenido del QuillController como un Delta
+
     quill.Delta delta = _controller.document.toDelta();
-    // Obtener el tipo del contenido (por ejemplo, "texto" o "latex")
-    String tipo = "texto"; // Por defecto, asumimos que es un contenido de texto
-    if (contenidos.isNotEmpty && contenidos.last.contenido.first.containsKey("latex")) {
-      tipo = "latex"; // Si el último contenido agregado es LaTeX, establecemos el tipo como "latex"
-    }
-    // Convertir el Delta en una lista serializable utilizando JSON
+
     List<Map<String, dynamic>> serializedDelta = delta
         .map((op) => op.toJson()) // Convertir cada operación en un mapa JSON
         .toList();
-    // Crear un mapa que contiene los datos del contenido
+
     Map<String, dynamic> contenidoData = {
       "contenido": serializedDelta,
     };
     await referencecontenido.doc("1").set(contenidoData);
   }
-
-
 
   void _insertarlatex() async {
     // Mostrar un cuadro de diálogo para que el usuario ingrese el contenido LaTeX
@@ -268,33 +273,18 @@ class _vistaContenidoState extends State<vistaContenido> {
 // Crear un objeto Delta que representa el contenido LaTeX
     final newLatex = '\$$latexContent\$'; // Encapsular el contenido LaTeX con $ para su renderización.
     final currentPosition = _controller.selection.baseOffset;
+    final delta = quill.Delta()..retain(currentPosition)..insert({"latex": latexContent, })..retain(currentPosition);
+
     // Insertar el contenido LaTeX en la posición actual del cursor
-    _controller.replaceText(currentPosition, 0, newLatex, TextSelection.collapsed(offset: currentPosition + newLatex.length),);
+    //_controller.replaceText(currentPosition, 0, newLatex, TextSelection.collapsed(offset: currentPosition + newLatex.length),);
+    _controller.compose(delta,TextSelection.collapsed(offset: currentPosition ),quill.ChangeSource.LOCAL);
+
     // Agregar el contenido LaTeX como tipo "latex" a la lista contenidos
     setState(() {
-      contenidos.add(Contenido(newLatex as List<Map<String, dynamic>>));
+      print("contenido $contenidos");
     });
 
 
-  }
-
-  List<Widget> renderMathExpressions(String content) {
-    final List<Widget> widgets = [];
-
-    int start = content.indexOf(r'$');
-    int end;
-    while (start != -1) {
-      end = content.indexOf(r'$', start + 1);
-      if (end != -1) {
-        final mathExpression = content.substring(start + 1, end);
-        widgets.add(Math.tex(mathExpression));
-        start = content.indexOf(r'$', end + 1);
-      } else {
-        break;
-      }
-    }
-
-    return widgets;
   }
 
   Future selectFile() async{
@@ -333,16 +323,9 @@ class _vistaContenidoState extends State<vistaContenido> {
           _archivoExtension = fileextension!;
           print(fileextension);
           print(pickedFile);
-
         });
       }
-
-
-
-
     }
-
-
   }
 
   Future<String> uploadfile() async{
@@ -362,6 +345,7 @@ class _vistaContenidoState extends State<vistaContenido> {
       ArchivoSolicitud newarhicvosolicitud = ArchivoSolicitud(archivoNombre,downloadUrl,_archivoExtension);
       await newarchivos.doc("ss").collection("ARCHIVOS").add(newarhicvosolicitud.toMap());
       print(newarhicvosolicitud);
+      _insertarImagenEnQuill(_imgurl);
 
       return _imgurl;
 
@@ -389,23 +373,12 @@ class _vistaContenidoState extends State<vistaContenido> {
 
   void _insertarImagenEnQuill(String imageUrl) {
     // Inserta la imagen en el editor usando la URL de descarga
-    final index = _controller.selection.baseOffset;
-    final length = 0;
-    _controller.replaceText(index, 0, imageUrl, TextSelection.collapsed(offset: index + length),);
-  }
+    final currentPosition = _controller.selection.extentOffset  ;
+    final delta = quill.Delta()..retain(currentPosition)..insert({"image": imageUrl, });
+    print("pos puntero = $currentPosition");
 
-  Widget? myEmbedBuilder(BuildContext context, quill.Embed node, double verticalOffset) {
-    if (node.value.type == 'image') {
-      final imageUrl = node.value.data['src'] as String?;
-      if (imageUrl != null) {
-        print("se encontro uina imagen");
-        // Devolver una imagen utilizando Image.network
-        return Image.network(imageUrl);
-      }
-    }
+    _controller.compose(delta,TextSelection.collapsed(offset: currentPosition ),quill.ChangeSource.LOCAL);
 
-    // Si no es una imagen o no tiene una URL válida, retornar null para mantener el embed original.
-    return null;
   }
 
 

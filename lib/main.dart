@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:materiapp/DASH%20ADMON/admin_dash.dart';
+import 'package:materiapp/Pages/admin_dash.dart';
 import 'package:materiapp/Pages/AgregarContenido.dart';
 
 Future<void> main() async {

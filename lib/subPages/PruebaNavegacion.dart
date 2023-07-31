@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:materiapp/DASH%20ADMON/admin_dash.dart';
+import 'package:materiapp/Pages/admin_dash.dart';
 import 'package:materiapp/Pages/AgregarTemas.dart';
-import 'package:materiapp/vistaContenido.dart';
+import 'package:materiapp/Pages/vistaContenido.dart';
 
 class PruebaNavegacion extends StatefulWidget {
   final int ordentema;

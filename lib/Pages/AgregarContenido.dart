@@ -29,7 +29,6 @@ class _AgregarContenidoState extends State<AgregarContenido> {
                 },
               ),
               Column(children: [
-                Math.tex(r'x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}', mathStyle: MathStyle.display),
               ],)
               ],
           ),
